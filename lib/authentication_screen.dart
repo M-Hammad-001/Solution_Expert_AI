@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'api_service.dart';
+import 'login.dart';
+import 'signup_screen.dart';
 
 class AuthenticationScreen extends StatefulWidget {
   const AuthenticationScreen({super.key});
@@ -12,12 +15,11 @@ class AuthenticationScreen extends StatefulWidget {
 
 class _AuthenticationScreenState extends State<AuthenticationScreen> {
   String displayText = "Let's Started";
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Change text after 2 seconds
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -25,6 +27,26 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         });
       }
     });
+  }
+
+  Future<void> _handleGuestLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.guestLogin();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, "/home");
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Guest login failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -45,7 +67,6 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Top section with animated text
               Expanded(
                 flex: 5,
                 child: Center(
@@ -54,12 +75,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     children: [
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 500),
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(opacity: animation, child: child);
                         },
                         child: Text(
                           displayText,
@@ -85,8 +102,6 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   ),
                 ),
               ),
-
-              // Bottom section with buttons
               Container(
                 decoration: const BoxDecoration(
                   color: Color(0xFF2D1B3D),
@@ -96,70 +111,33 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0, vertical: 28.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Continue with Apple
+                       // ✅ SIGN UP BUTTON - Goes to dedicated signup screen
                       _buildAuthButton(
-                        onPressed: () {},
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        icon: Icons.apple,
-                        label: 'Continue with Apple',
-                        iconColor: Colors.black,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Continue with Google
-                      _buildAuthButton(
-                        onPressed: () {},
-                        backgroundColor: const Color(0xFF3D2B4D),
-                        foregroundColor: Colors.white,
-                        label: 'Continue with Google',
-                        customIcon: Container(
-                          width: 22,
-                          height: 22,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'G',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignupScreen()),
                         ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Sign up with email
-                      _buildAuthButton(
-                        onPressed: () {},
                         backgroundColor: const Color(0xFF3D2B4D),
                         foregroundColor: Colors.white,
                         icon: Icons.email_outlined,
                         label: 'Sign up with email',
                       ),
-
                       const SizedBox(height: 12),
 
-                      // Log in button
+                      // ✅ LOGIN BUTTON - Goes to dedicated login screen
                       _buildAuthButton(
-                        onPressed: () {},
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        ),
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                         label: 'Log in',
                       ),
-
                       const SizedBox(height: 12),
 
                       // ⭐ CONTINUE AS GUEST BUTTON (Updated) ⭐
@@ -172,7 +150,6 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                         foregroundColor: Colors.white,
                         label: 'Continue as a Guest',
                       ),
-
                       const SizedBox(height: 8),
                     ],
                   ),
@@ -195,7 +172,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     Color? iconColor,
   }) {
     return ElevatedButton(
-      onPressed: onPressed,
+      onPressed: _isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
@@ -206,22 +183,39 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 20),
       ),
-      child: Row(
+      child: _isLoading
+          ? SizedBox(
+        height: 20,
+        width: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
+        ),
+      )
+          : Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (icon != null)
             Icon(icon, size: 24, color: iconColor ?? foregroundColor),
           if (customIcon != null) customIcon,
           if (icon != null || customIcon != null) const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }

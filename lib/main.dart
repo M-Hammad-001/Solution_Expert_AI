@@ -1,12 +1,23 @@
 // ==================== FILE: main.dart ====================
 
 import 'package:flutter/material.dart';
+import 'api_service.dart'; // ✅ Your Gemini ApiService
 import 'splash_screen.dart';
 import 'second_splash_screen.dart';
 import 'authentication_screen.dart';
-import 'Home.dart';
+import 'Home.dart'; // ✅ Your HomeScreen
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ INITIALIZE GEMINI AI (ONE TIME)
+  try {
+    await ApiService.initGemini();
+    print('✅ Gemini AI Ready!');
+  } catch (e) {
+    print('❌ Gemini init failed: $e');
+  }
+
   runApp(const MyApp());
 }
 
@@ -22,13 +33,13 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.purple,
         useMaterial3: true,
       ),
-      // Set FirstSplashScreen as the initial screen
+      // ✅ FIXED: Correct initialRoute matching routes map
       initialRoute: '/splash_screen',
       routes: {
-        '/': (context) => const FirstSplashScreen(),
+        '/splash_screen': (context) => const FirstSplashScreen(),  // ✅ Fixed key
         '/second': (context) => const SecondSplashScreen(),
         '/auth': (context) => const AuthenticationScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const HomeScreen(),  // ✅ Assuming Home.dart exports HomeScreen
       },
     );
   }

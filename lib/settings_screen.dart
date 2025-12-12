@@ -1,6 +1,7 @@
 // ==================== FILE: settings_screen.dart ====================
 
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   final bool isDarkMode;
@@ -150,62 +151,71 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildUserCard(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 35,
-            backgroundColor: const Color(0xFF9333EA),
-            child: const Text(
-              'U',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+    return FutureBuilder<Map<String, dynamic>>(
+      future: ApiService.getCurrentUser(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            height: 100,
+            padding: const EdgeInsets.all(16),
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final user = snapshot.data ?? {'name': 'Guest', 'email': 'guest@example.com'};
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2D2D3D) : const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 35,
+                backgroundColor: const Color(0xFF9333EA),
+                child: Text(
+                  user['name']?[0] ?? 'G',
+                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user['name'] ?? 'Guest User',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      user['email'] ?? 'guest@example.com',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                    Text(
+                      user['isGuest'] == true ? 'Guest Account' : 'Member since ${user['dob']}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'User Name',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'user@email.com',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDark ? Colors.white70 : Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Member since Jan 2024',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white54 : Colors.black45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+
 
   Widget _buildCurrentPlanCard(bool isDark) {
     return Container(

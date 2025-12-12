@@ -12,6 +12,10 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  http: ^1.2.1
+  flutter_gemini: ^2.0.1  # ✅ OFFICIAL Gemini package
+  flutter_dotenv: ^5.1.0      # ✅ Secure API key
+  google_generative_ai: ^0.4.0  # ✅ OFFICIAL Google Gemini (NOT flutter_gemini)
 
 dev_dependencies:
   flutter_test:
