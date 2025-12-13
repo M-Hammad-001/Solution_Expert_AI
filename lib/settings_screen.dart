@@ -1,4 +1,4 @@
-// ==================== FILE: settings_screen.dart ====================
+// ==================== FILE 1: settings_screen.dart ====================
 
 import 'package:flutter/material.dart';
 import 'api_service.dart';
@@ -92,12 +92,6 @@ class SettingsScreen extends StatelessWidget {
             isDarkMode,
                 () {},
           ),
-         /* _buildSettingsTile(
-            Icons.notifications_outline,
-            'Notifications',
-            isDarkMode,
-                () {},
-          ),*/
           _buildSettingsTile(
             Icons.privacy_tip_outlined,
             'Privacy Policy',
@@ -114,8 +108,11 @@ class SettingsScreen extends StatelessWidget {
 
           // Logout Button
           ElevatedButton(
-            onPressed: () {
-              // Handle logout
+            onPressed: () async {
+              await ApiService.logout();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/auth');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -158,11 +155,41 @@ class SettingsScreen extends StatelessWidget {
           return Container(
             height: 100,
             padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2D2D3D) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: const Center(child: CircularProgressIndicator()),
           );
         }
 
-        final user = snapshot.data ?? {'name': 'Guest', 'email': 'guest@example.com'};
+        if (snapshot.hasError) {
+          return Container(
+            height: 100,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2D2D3D) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                'Error loading user data',
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+              ),
+            ),
+          );
+        }
+
+        final user = snapshot.data ?? {
+          'name': 'Guest',
+          'email': 'guest@example.com',
+          'dob': 'N/A',
+          'isGuest': true
+        };
+
+        final nameInitial = (user['name']?.toString() ?? 'G')[0].toUpperCase();
+        final isGuest = user['isGuest'] == true;
+
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -175,8 +202,12 @@ class SettingsScreen extends StatelessWidget {
                 radius: 35,
                 backgroundColor: const Color(0xFF9333EA),
                 child: Text(
-                  user['name']?[0] ?? 'G',
-                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                  nameInitial,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -192,6 +223,7 @@ class SettingsScreen extends StatelessWidget {
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       user['email'] ?? 'guest@example.com',
                       style: TextStyle(
@@ -199,12 +231,23 @@ class SettingsScreen extends StatelessWidget {
                         color: isDark ? Colors.white70 : Colors.black54,
                       ),
                     ),
-                    Text(
-                      user['isGuest'] == true ? 'Guest Account' : 'Member since ${user['dob']}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white54 : Colors.black45,
-                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.cake_outlined,
+                          size: 14,
+                          color: isDark ? Colors.white54 : Colors.black45,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isGuest ? 'Guest Account' : 'DOB: ${user['dob'] ?? 'N/A'}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white54 : Colors.black45,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -215,7 +258,6 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-
 
   Widget _buildCurrentPlanCard(bool isDark) {
     return Container(

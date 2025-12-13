@@ -1,7 +1,7 @@
-// ==================== AI-POWERED FILE: home_screen.dart ====================
+// ==================== FILE 2: home_screen.dart ====================
 
 import 'package:flutter/material.dart';
-import 'api_service.dart'; // ✅ Updated import path
+import 'api_service.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,12 +16,27 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   List<dynamic> messages = [];
   final TextEditingController _messageController = TextEditingController();
-  bool _isSending = false; // ✅ Loading indicator
+  bool _isSending = false;
+  Map<String, dynamic>? currentUser;
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await ApiService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          currentUser = user;
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
   }
 
   Future<void> _loadMessages() async {
@@ -37,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✅ AI-POWERED SEND MESSAGE (User + AI response)
   Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty || _isSending) return;
 
@@ -46,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isSending = true);
 
     try {
-      // ✅ MAGIC: One call = User message + AI response!
       final result = await ApiService.sendSmartMessage(text);
 
       if (mounted) {
@@ -68,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _logout() async {
     await ApiService.logout();
     if (mounted) {
-      Navigator.pushReplacementNamed(context, '/auth'); // ✅ Fixed route
+      Navigator.pushReplacementNamed(context, '/auth');
     }
   }
 
@@ -87,9 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: const Text(
+        title: Text(
           'Solution Expert AI',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
         ),
         actions: [
           Padding(
@@ -179,7 +195,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ AI-STYLED MESSAGE TILES (User vs AI)
   Widget _buildMessageTile(Map<String, dynamic> msg) {
     final isAI = msg['isAI'] == true;
     final usernameInitial = (msg['username'] ?? 'U')[0].toUpperCase();
@@ -191,7 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: isAI ? MainAxisAlignment.start : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ AI AVATAR (Left side)
           if (isAI)
             Container(
               margin: const EdgeInsets.only(right: 12),
@@ -201,7 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Icon(Icons.smart_toy, color: Colors.white, size: 24),
               ),
             )
-          // ✅ USER AVATAR (Right side)
           else
             Container(
               margin: const EdgeInsets.only(left: 12),
@@ -214,7 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          // ✅ MESSAGE BUBBLE
           Flexible(
             child: Column(
               crossAxisAlignment:
@@ -289,6 +301,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer() {
+    final user = currentUser ?? {
+      'name': 'Guest',
+      'email': 'guest@example.com',
+      'dob': 'N/A',
+      'isGuest': true
+    };
+    final nameInitial = (user['name']?.toString() ?? 'G')[0].toUpperCase();
+    final isGuest = user['isGuest'] == true;
+
     return Drawer(
       backgroundColor: isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
       child: Column(
@@ -297,64 +318,74 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 16),
             child: Column(
               children: [
-                FutureBuilder<Map<String, dynamic>>(
-                  future: ApiService.getCurrentUser(),
-                  builder: (context, snapshot) {
-                    final user = snapshot.data ?? {'name': 'Guest', 'email': 'guest@example.com'};
-                    final nameInitial = (user['name']?.toString() ?? 'G')[0].toUpperCase();
-
-                    return Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 35,
-                          backgroundColor: isDarkMode ? Colors.green : const Color(0xFF9333EA),
-                          child: Text(
-                            nameInitial,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          user['name'] ?? 'Guest User',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        Text(
-                          user['email'] ?? 'guest@example.com',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDarkMode ? Colors.white70 : Colors.black54,
-                          ),
-                        ),
-                        if (user['isGuest'] == true) ...[
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Guest Account',
-                              style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
+                CircleAvatar(
+                  radius: 35,
+                  backgroundColor: isDarkMode ? Colors.green : const Color(0xFF9333EA),
+                  child: Text(
+                    nameInitial,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  user['name'] ?? 'Guest User',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user['email'] ?? 'guest@example.com',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                if (!isGuest) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.cake_outlined,
+                        size: 14,
+                        color: isDarkMode ? Colors.white54 : Colors.black45,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'DOB: ${user['dob'] ?? 'N/A'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDarkMode ? Colors.white54 : Colors.black45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (isGuest) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Guest Account',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ListTile(
                   leading: Icon(Icons.edit_note, color: isDarkMode ? Colors.white : Colors.black),
@@ -483,44 +514,44 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF3D3D3D) : const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _messageController,
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                onSubmitted: (_) => _sendMessage(),
-                enabled: !_isSending, // ✅ Disable during AI processing
-                decoration: InputDecoration(
-                  hintText: _isSending ? 'AI is thinking...' : 'Type your message...',
-                  hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.black45),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: _isSending ? Colors.grey : const Color(0xFF9333EA),
-            radius: 22,
-            child: _isSending
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-            )
-                : IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
-              onPressed: _isSending ? null : _sendMessage,
-            ),
-          ),
-        ],
+          children: [
+      Expanded(
+      child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF3D3D3D) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: TextField(
+        controller: _messageController,
+        style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+        onSubmitted: (_) => _sendMessage(),
+        enabled: !_isSending,
+        decoration: InputDecoration(
+          hintText: _isSending ? 'AI is thinking...' : 'Type your message...',
+          hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.black45),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    ),
+    ),
+    const SizedBox(width: 8),
+    CircleAvatar(
+    backgroundColor: _isSending ? Colors.grey : const Color(0xFF9333EA),
+    radius: 22,
+    child: _isSending
+    ? const SizedBox(
+    height: 20,
+    width: 20,
+    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+    )
+        : IconButton(
+    icon: const Icon(Icons.send, color: Colors.white, size: 20),
+    onPressed: _isSending ? null : _sendMessage,
+    ),
+    ),
+          ],
       ),
     );
   }
